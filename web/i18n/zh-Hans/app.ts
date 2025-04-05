@@ -18,6 +18,7 @@ const translation = {
   export: '导出 DSL',
   exportFailed: '导出 DSL 失败',
   importDSL: '导入 DSL 文件',
+  createFromGameRequirement: '从游戏需求创建',
   createFromConfigFile: '通过 DSL 文件创建',
   importFromDSL: '导入 DSL',
   importFromDSLFile: '文件',

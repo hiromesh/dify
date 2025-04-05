@@ -18,6 +18,7 @@ const translation = {
   export: 'Export DSL',
   exportFailed: 'Export DSL failed.',
   importDSL: 'Import DSL file',
+  createFromGameRequirement: 'Create from game requirement',
   createFromConfigFile: 'Create from DSL file',
   importFromDSL: 'Import from DSL',
   importFromDSLFile: 'From DSL file',
