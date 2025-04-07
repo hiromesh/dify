@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'next/navigation'
 import { useContext, useContextSelector } from 'use-context-selector'
@@ -44,6 +44,13 @@ type Message = {
   isLoading?: boolean
 }
 
+// 添加会话数据类型定义
+type SessionData = {
+  session_id: string
+  status: string
+  data: any
+}
+
 type CreateFromGameRequirementsProps = {
   onSuccess: () => void
   onClose: () => void
@@ -56,22 +63,21 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
   const mutateApps = useContextSelector(AppsContext, state => state.mutateApps)
 
   // 应用信息相关状态
-  const [isCreating, setIsCreating] = useState(false)
-  const [appIcon, setAppIcon] = useState<AppIconSelection>({ type: 'emoji', icon: '🎮', background: '#FFEAD5' })
-  const [showAppIconPicker, setShowAppIconPicker] = useState(false)
   const [name, setName] = useState('')
   const [gameRequirements, setGameRequirements] = useState('')
+  const [userInput, setUserInput] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [isProcessing, setIsProcessing] = useState(false)
   const [showAppInfo, setShowAppInfo] = useState(true)
+  const [isCreating, setIsCreating] = useState(false)
+  const [appIcon, setAppIcon] = useState<AppIconSelection>({ type: 'emoji', icon: '🎮', background: '#5A985E' })
+  const [showAppIconPicker, setShowAppIconPicker] = useState(false)
+
+  // 会话状态管理
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [abortController, setAbortController] = useState<AbortController | null>(null)
 
   // 聊天和处理相关状态
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: '你好！请描述你想要创建的游戏需求，我将帮助你分析并生成相应的工作流。' },
-  ])
-  const [userInput, setUserInput] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-
-  // 处理步骤状态
   const [steps, setSteps] = useState<ProcessStep[]>([
     {
       key: 'requirements',
@@ -126,32 +132,19 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
 
   // 模拟Agent处理消息
   const handleSendMessage = useCallback(() => {
-    if (!userInput.trim()) return
-
-    // 确保游戏需求已填写
-    if (!gameRequirements)
-      handleAutoFillDescription()
+    if (!userInput.trim() || isProcessing) return
 
     // 添加用户消息
-    const newUserMessage: Message = { role: 'user', content: userInput }
-    setMessages(prev => [...prev, newUserMessage])
+    setMessages(prev => [...prev, { role: 'user', content: userInput }])
 
-    // 添加加载中的Agent消息
-    const loadingMessage: Message = { role: 'assistant', content: '', isLoading: true }
-    setMessages(prev => [...prev, loadingMessage])
+    // 添加Agent加载消息
+    setMessages(prev => [...prev, { role: 'assistant', content: '', isLoading: true }])
 
-    setUserInput('')
     setIsProcessing(true)
 
-    // 模拟处理步骤
-    let currentStepIndex = steps.findIndex(step => step.status === 'current')
-    if (currentStepIndex === -1) {
-      // 开始第一个步骤
-      const newSteps = [...steps]
-      newSteps[0].status = 'current'
-      setSteps(newSteps)
-      currentStepIndex = 0
-    }
+    // 如果是首条消息，自动填充游戏要求
+    if (messages.length === 0 && !gameRequirements)
+      handleAutoFillDescription()
 
     // 延迟显示Agent回复，模拟思考时间
     setTimeout(() => {

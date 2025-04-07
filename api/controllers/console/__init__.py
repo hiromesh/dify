@@ -55,6 +55,7 @@ from .app import (
     completion,
     conversation,
     conversation_variables,
+    game_requirements,
     generator,
     message,
     model_config,

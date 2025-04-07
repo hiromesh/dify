@@ -5,10 +5,10 @@ Provides generic JSON parsing capabilities with streaming support.
 
 import json
 import re
-from collections.abc import Generator
-from typing import Any, Dict, List, Optional, Union, TypeVar, Generic, Callable
+from collections.abc import Callable, Generator
+from typing import Any, Generic, Optional, TypeVar, Union
 
-from core.model_runtime.entities.llm_entities import LLMResultChunk, LLMResult
+from core.model_runtime.entities.llm_entities import LLMResult, LLMResultChunk
 
 T = TypeVar('T')
 
@@ -22,8 +22,8 @@ class WorkflowOutputParser(Generic[T]):
     def __init__(
         self,
         result_type: type,
-        result_factory: Optional[Callable[[Dict[str, Any]], T]] = None,
-        default_schema: Optional[Dict[str, Any]] = None
+        result_factory: Optional[Callable[[dict[str, Any]], T]] = None,
+        default_schema: Optional[dict[str, Any]] = None
     ):
         """
         Initialize the output parser.
@@ -59,7 +59,7 @@ class WorkflowOutputParser(Generic[T]):
         self,
         llm_response: Generator[LLMResultChunk, None, None],
         usage_dict: dict
-    ) -> Generator[Union[str, Dict[str, Any]], None, None]:
+    ) -> Generator[Union[str, dict[str, Any]], None, None]:
         """
         Handle streaming LLM response and extract JSON data.
 
@@ -70,7 +70,7 @@ class WorkflowOutputParser(Generic[T]):
         Returns:
             Generator yielding either text chunks or parsed JSON data
         """
-        def extract_json_from_code_block(code_block) -> List[Union[List, Dict]]:
+        def extract_json_from_code_block(code_block) -> list[Union[list, dict]]:
             """Extract JSON from code blocks in the response."""
             blocks = re.findall(
                 r"```[json]*\s*([\[{].*[]}])\s*```", code_block, re.DOTALL | re.IGNORECASE)
@@ -131,8 +131,7 @@ class WorkflowOutputParser(Generic[T]):
                         json_blocks = extract_json_from_code_block(
                             code_block_cache)
                         if json_blocks:
-                            for json_block in json_blocks:
-                                yield json_block
+                            yield from json_blocks
                             code_block_cache = ""
                         else:
                             index += steps
@@ -192,7 +191,7 @@ class WorkflowOutputParser(Generic[T]):
             except json.JSONDecodeError:
                 yield json_cache
 
-    def _extract_json_from_response(self, response: str) -> Dict[str, Any]:
+    def _extract_json_from_response(self, response: str) -> dict[str, Any]:
         """
         Extract JSON from LLM response text.
 
@@ -226,7 +225,7 @@ class WorkflowOutputParser(Generic[T]):
         # Return empty dict if all extraction methods fail
         return {}
 
-    def _extract_json_from_code_block(self, code_block: str) -> List[Union[List, Dict]]:
+    def _extract_json_from_code_block(self, code_block: str) -> list[Union[list, dict]]:
         """
         Extract JSON from code blocks in the response.
 
@@ -250,7 +249,7 @@ class WorkflowOutputParser(Generic[T]):
         except:
             return []
 
-    def _extract_structured_information(self, response: str, schema: Dict[str, Any]) -> Dict[str, Any]:
+    def _extract_structured_information(self, response: str, schema: dict[str, Any]) -> dict[str, Any]:
         """
         Extract structured information from text based on a schema.
 
@@ -272,7 +271,7 @@ class WorkflowOutputParser(Generic[T]):
         # Simple extraction based on section headers
         sections = response.split("\n\n")
         for section in sections:
-            for key in schema.keys():
+            for key in schema:
                 # Create a pattern that matches the key name with some flexibility
                 pattern = f"{key}\\s*:(.+?)(?=\\n\\n|$)"
                 match = re.search(pattern, section, re.IGNORECASE | re.DOTALL)

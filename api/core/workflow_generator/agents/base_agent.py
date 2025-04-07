@@ -1,19 +1,15 @@
-from typing import Any, Dict, List, Optional, Generator
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Generator
+from typing import Any, Optional
 
 from core.model_manager import ModelInstance
-from models.model import Conversation, Message
-from core.model_runtime.entities.message_entities import (
-    UserPromptMessage,
-    SystemPromptMessage,
-    AssistantPromptMessage,
-    PromptMessage
-)
-from models.dataset import Dataset
-from extensions.ext_database import db
-from core.rag.retrieval.retrieval_methods import RetrievalMethod
+from core.model_runtime.entities.message_entities import PromptMessage, SystemPromptMessage, UserPromptMessage
 from core.rag.datasource.retrieval_service import RetrievalService
+from core.rag.retrieval.retrieval_methods import RetrievalMethod
+from extensions.ext_database import db
+from models.dataset import Dataset
+from models.model import Conversation, Message
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +23,7 @@ class BaseWorkflowAgent(ABC):
         message: Message,
         user_id: str,
         model_instance: ModelInstance,
-        prompt_messages: List[PromptMessage] = [],
+        prompt_messages: list[PromptMessage] = [],
     ) -> None:
         self.tenant_id = tenant_id
         self.conversation = conversation
@@ -35,17 +31,20 @@ class BaseWorkflowAgent(ABC):
         self.user_id = user_id
         self.model_instance = model_instance
         self.prompt_messages = prompt_messages
-        self.history_messages: List[PromptMessage] = []
+        self.history_messages: list[PromptMessage] = []
 
     @property
-    def default_schema(self) -> Dict[str, Any]:
+    @abstractmethod
+    def default_schema(self) -> dict[str, Any]:
         pass
 
     @property
+    @abstractmethod
     def system_prompt(self) -> str:
         pass
 
     @property
+    @abstractmethod
     def prompt_template(self) -> str:
         pass
 
@@ -53,7 +52,7 @@ class BaseWorkflowAgent(ABC):
     def run(self, input_data: str) -> Generator[str, None, None]:
         raise NotImplementedError
 
-    def _relevant_info(self, query: str) -> Optional[List[str]]:
+    def _relevant_info(self, query: str) -> Optional[list[str]]:
         try:
             datasets = db.session.query(Dataset).filter(
                 Dataset.available_document_count > 0).all()
@@ -86,10 +85,10 @@ class BaseWorkflowAgent(ABC):
                 results.append(content)
             return results
         except Exception as e:
-            logger.error(f"Error in _relevant_info: {str(e)}")
+            logger.exception("Error in _relevant_info")
             return None
 
-    def _construct_messages(self, prompt: str) -> List[PromptMessage]:
+    def _construct_messages(self, prompt: str) -> list[PromptMessage]:
         system_content = self.system_prompt
         rag_results = self._relevant_info(prompt)
         if rag_results and len(rag_results) > 0:

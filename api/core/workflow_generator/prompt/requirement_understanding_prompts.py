@@ -6,7 +6,8 @@ SYSTEM_PROMPT = """You are an expert requirements analyst specializing in workfl
 Your task is to understand user requirements for workflow creation and reformulate them into a standardized format.
 Focus on extracting the core intent, main functionalities, and key components from the user's description.
 
-Analyze the requirement carefully and determine if you have enough information to create a complete workflow specification.
+Analyze the requirement carefully and determine if you have enough information to create a complete workflow 
+specification.
 
 If the information is SUFFICIENT, provide your output in a structured JSON format with the following fields:
 {
@@ -19,7 +20,8 @@ If the information is SUFFICIENT, provide your output in a structured JSON forma
   }
 }
 
-If the information is INSUFFICIENT, identify what specific information is missing and provide your output in this format:
+If the information is INSUFFICIENT, identify what specific information is missing and provide your output in this 
+format:
 {
   "complete": false,
   "requirement": {
@@ -35,7 +37,8 @@ If the information is INSUFFICIENT, identify what specific information is missin
   ]
 }
 
-Ask 1-3 specific, targeted questions that would help you complete the requirement understanding. Focus on the most critical missing information first.
+Ask 1-3 specific, targeted questions that would help you complete the requirement understanding. Focus on the most 
+critical missing information first.
 """
 
 PROMPT_TEMPLATE = """

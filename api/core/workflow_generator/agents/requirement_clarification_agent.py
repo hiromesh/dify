@@ -1,16 +1,10 @@
-from typing import Any, Dict, List, Optional
 import json
 import logging
+from typing import Any
+
+from core.workflow_generator.prompt.requirement_clarification_prompts import PROMPT_TEMPLATE, SYSTEM_PROMPT
 
 from .base_agent import BaseWorkflowAgent
-from core.model_runtime.entities.message_entities import (
-    UserPromptMessage,
-    SystemPromptMessage
-)
-from core.workflow_generator.prompt.requirement_clarification_prompts import (
-    SYSTEM_PROMPT,
-    PROMPT_TEMPLATE
-)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +35,7 @@ class RequirementClarificationAgent(BaseWorkflowAgent):
         """
         return PROMPT_TEMPLATE
 
-    def process(self, input_data: Dict[str, Any], planning_document: str = "") -> Dict[str, Any]:
+    def process(self, input_data: dict[str, Any], planning_document: str = "") -> dict[str, Any]:
         """
         Process the standardized requirement and planning document to generate detailed requirements.
 
@@ -116,7 +110,7 @@ class RequirementClarificationAgent(BaseWorkflowAgent):
 
         return result
 
-    def parse_llm_response(self, response: str) -> Dict[str, Any]:
+    def parse_llm_response(self, response: str) -> dict[str, Any]:
         """
         Parse the LLM response into a structured format.
 
@@ -195,9 +189,7 @@ class RequirementClarificationAgent(BaseWorkflowAgent):
                     current_items = []
                 elif current_section and current_section != "refined_intent":
                     # Add item to current section
-                    if line.startswith("- "):
-                        current_items.append(line[2:])
-                    elif line.startswith("* "):
+                    if line.startswith("- ") or line.startswith("* "):
                         current_items.append(line[2:])
                     else:
                         current_items.append(line)

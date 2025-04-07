@@ -4,20 +4,15 @@ This agent is responsible for adding detailed node parameters and data transform
 to a coarse workflow, generating a complete Dify workflow in YAML format.
 """
 
-from typing import Any, Dict, List, Optional
 import json
-import yaml
 import logging
+from typing import Any
+
+import yaml
+
+from core.workflow_generator.prompt.workflow_detailing_prompts import PROMPT_TEMPLATE, SYSTEM_PROMPT
 
 from .base_agent import BaseWorkflowAgent
-from core.model_runtime.entities.message_entities import (
-    UserPromptMessage,
-    SystemPromptMessage
-)
-from core.workflow_generator.prompt.workflow_detailing_prompts import (
-    SYSTEM_PROMPT,
-    PROMPT_TEMPLATE
-)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +42,7 @@ class WorkflowDetailingAgent(BaseWorkflowAgent):
         """
         return PROMPT_TEMPLATE
     
-    def process(self, coarse_workflow: Dict[str, Any], detailed_requirements: Dict[str, Any]) -> str:
+    def process(self, coarse_workflow: dict[str, Any], detailed_requirements: dict[str, Any]) -> str:
         """
         Process the coarse workflow and detailed requirements to generate a complete workflow.
         
@@ -197,6 +192,6 @@ class WorkflowDetailingAgent(BaseWorkflowAgent):
             # Re-dump to ensure proper formatting
             return yaml.dump(workflow, sort_keys=False, default_flow_style=False)
         except yaml.YAMLError as e:
-            logger.error(f"Invalid YAML in LLM response: {e}")
+            logger.exception("Invalid YAML in LLM response")
             # Return the original content if validation fails
             return yaml_content

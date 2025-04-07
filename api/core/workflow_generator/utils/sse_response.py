@@ -3,8 +3,9 @@ SSE response utilities for workflow generator agents.
 """
 
 import json
+from collections.abc import Callable, Generator
 from enum import Enum
-from typing import Any, Dict, Generator, Optional, Callable
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -26,17 +27,17 @@ class SSEResponse(BaseModel):
     """Base SSE response model."""
 
     event: SSEEventType
-    data: Dict[str, Any]
+    data: dict[str, Any]
 
 
-def format_sse_data(data: Dict[str, Any]) -> str:
+def format_sse_data(data: dict[str, Any]) -> str:
     """Format data as SSE message."""
     return f"data: {json.dumps(data)}\n\n"
 
 
 def generate_sse_response(
     event_type: SSEEventType,
-    data: Dict[str, Any]
+    data: dict[str, Any]
 ) -> str:
     response = SSEResponse(event=event_type, data=data)
     return format_sse_data(response.model_dump())
@@ -44,7 +45,7 @@ def generate_sse_response(
 
 def stream_generator(
     content_stream: Generator[Any, None, None],
-    post_process_func: Optional[Callable[[str], Dict[str, Any]]] = None
+    post_process_func: Optional[Callable[[str], dict[str, Any]]] = None
 ) -> Generator[str, None, None]:
     accumulated_content = ""
 

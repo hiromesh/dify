@@ -4,19 +4,13 @@ This agent is responsible for breaking down detailed requirements into a coarse 
 with node information but without parameter details.
 """
 
-from typing import Any, Dict, List, Optional
 import json
 import logging
+from typing import Any
+
+from core.workflow_generator.prompt.workflow_breakdown_prompts import PROMPT_TEMPLATE, SYSTEM_PROMPT
 
 from .base_agent import BaseWorkflowAgent
-from core.model_runtime.entities.message_entities import (
-    UserPromptMessage,
-    SystemPromptMessage
-)
-from core.workflow_generator.prompt.workflow_breakdown_prompts import (
-    SYSTEM_PROMPT,
-    PROMPT_TEMPLATE
-)
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +40,7 @@ class WorkflowBreakdownAgent(BaseWorkflowAgent):
         """
         return PROMPT_TEMPLATE
     
-    def process(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
         """
         Process the detailed requirement and generate a coarse workflow.
         
@@ -111,7 +105,7 @@ class WorkflowBreakdownAgent(BaseWorkflowAgent):
         
         return result
     
-    def parse_llm_response(self, response: str) -> Dict[str, Any]:
+    def parse_llm_response(self, response: str) -> dict[str, Any]:
         """
         Parse the LLM response into a structured format.
         

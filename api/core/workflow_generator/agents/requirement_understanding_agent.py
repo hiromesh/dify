@@ -1,17 +1,12 @@
 import logging
-from typing import Any, Dict, Generator
+from collections.abc import Generator
+from typing import Any
 
-from .base_agent import BaseWorkflowAgent
-from core.model_runtime.entities.message_entities import (
-    UserPromptMessage,
-    AssistantPromptMessage
-)
-from core.workflow_generator.prompt.requirement_understanding_prompts import (
-    SYSTEM_PROMPT,
-    PROMPT_TEMPLATE
-)
+from core.workflow_generator.prompt.requirement_understanding_prompts import PROMPT_TEMPLATE, SYSTEM_PROMPT
 from core.workflow_generator.utils.output_parser import WorkflowOutputParser
 from core.workflow_generator.utils.sse_response import stream_generator
+
+from .base_agent import BaseWorkflowAgent
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +18,14 @@ class RequirementUnderstandingAgent(BaseWorkflowAgent):
     This agent takes raw user input, understands the intent, and reformulates it into
     a standardized format for further processing. It interacts with the user to clarify
     requirements until a complete understanding is achieved.
+    
+    This implementation is stateless - all state is returned in the response and can be
+    managed externally via database persistence.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.requirement = {}
+        # Remove self.requirement as we're making this stateless
         self.model_parameters = {"temperature": 0.3, "max_tokens": 4096}
         self.output_parser = WorkflowOutputParser(
             result_type=dict,
@@ -35,7 +33,7 @@ class RequirementUnderstandingAgent(BaseWorkflowAgent):
         )
 
     @property
-    def default_schema(self) -> Dict[str, Any]:
+    def default_schema(self) -> dict[str, Any]:
         return {
             "complete": False,
             "requirement": {
@@ -70,19 +68,18 @@ class RequirementUnderstandingAgent(BaseWorkflowAgent):
             callbacks=[],
         )
 
-        def _post_process(content: str) -> Dict[str, Any]:
+        def _post_process(content: str) -> dict[str, Any]:
             return self._process_response(input_data, content)
         return stream_generator(response_chunks, _post_process)
 
-    def _process_response(self, input_data: str, response_content: str) -> Dict[str, Any]:
-        self.history_messages.append(UserPromptMessage(content=input_data))
-
-        self.requirement: Dict[str, Any] = self.output_parser.parse_response(
-            response_content)
-        if self.requirement.get('complete', False):
-            self.history_messages.append(
-                AssistantPromptMessage(content=self.requirement.get('clarification_questions', '')))
-        else:
-            self.history_messages.append(
-                AssistantPromptMessage(content=self.requirement.get('requirement', '')))
-        return self.requirement
+    def _process_response(self, input_data: str, response_content: str) -> dict[str, Any]:
+        # Apply output parser to get structured requirement data
+        try:
+            parsed_output = self.output_parser.parse(response_content)
+            # Rather than updating internal state, just return the parsed output
+            # Any state management will be handled by the caller
+            return parsed_output
+        except Exception as e:
+            logger.exception("Parse response content failed")
+            # Return empty dict
+            return {}

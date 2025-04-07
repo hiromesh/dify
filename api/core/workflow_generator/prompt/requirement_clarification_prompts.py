@@ -3,7 +3,8 @@ Prompt templates for the requirement clarification agent.
 """
 
 SYSTEM_PROMPT = """You are an expert requirements engineer specializing in workflow automation.
-Your task is to clarify and refine user requirements for workflow creation by incorporating details from planning documents.
+Your task is to clarify and refine user requirements for workflow creation by incorporating details from
+planning documents.
 You should identify any ambiguities or missing details in the initial requirements and resolve them.
 Provide your output in a structured JSON format with the following fields:
 - refined_intent: The clarified main purpose of the workflow
