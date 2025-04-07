@@ -51,18 +51,17 @@ type SessionData = {
   data: any
 }
 
+// 导入系统的fetch服务
+import { post } from '@/service/base'
+
 // 添加游戏需求分析服务的API调用
 const analyzeGameRequirement = async (input: string, sessionId?: string) => {
-  const url = '/console/api/apps/default/game-requirements/analyze'
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  const url = '/apps/default/game-requirements/analyze'
+  const response = await post<Response>(url, {
+    body: {
       input,
       session_id: sessionId,
-    }),
+    },
   })
 
   if (!response.ok)
@@ -144,10 +143,11 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
       messagesEndRef.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // 自动填充游戏需求到消息中
+  // 准备游戏需求数据而不是自动添加到消息中
   const handleAutoFillDescription = useCallback(() => {
-    if (gameRequirements.trim())
-      setMessages(prev => [...prev, { role: 'user', content: gameRequirements }])
+    // 不再自动添加游戏需求到消息列表
+    // 只在内部处理该数据
+    return gameRequirements.trim() ? gameRequirements : ''
   }, [gameRequirements])
 
   // 确认应用基本信息
@@ -160,9 +160,8 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
       setSteps(newSteps)
     }
 
-    // 如果还没有开始聊天，自动将应用描述作为第一条消息
-    if (messages.length === 0 && gameRequirements.trim())
-      handleAutoFillDescription()
+    // 不再自动将应用描述作为第一条消息
+    // 用户可以手动输入第一条消息
   }, [steps, gameRequirements, handleAutoFillDescription])
 
   // 处理SSE事件流
@@ -253,9 +252,8 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
 
     setIsProcessing(true)
 
-    // 如果是首条消息，自动填充游戏要求
-    if (messages.length === 0 && !gameRequirements)
-      handleAutoFillDescription()
+    // 不再自动填充游戏要求
+    // 用户可以手动输入要求
 
     try {
       // 创建新的AbortController

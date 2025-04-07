@@ -4,6 +4,8 @@ from collections.abc import Generator
 from datetime import datetime
 from typing import Any, Optional
 
+from flask_login import current_user
+
 from core.model_manager import ModelManager
 from core.model_runtime.entities.message_entities import AssistantPromptMessage, UserPromptMessage
 from core.model_runtime.entities.model_entities import ModelType
@@ -20,24 +22,32 @@ class GameRequirementService:
     Service for managing game requirement analysis sessions
     """
 
-    def get_or_create_session(self, app_model: App, user_id: str,
+    def get_or_create_session(self, app_model: Optional[App], user_id: str,
                               session_id: Optional[str] = None) -> GameRequirementSession:
         """
         Get an existing session or create a new one
         """
         if session_id:
-            session = db.session.query(GameRequirementSession).filter(
-                GameRequirementSession.id == session_id,
-                GameRequirementSession.tenant_id == app_model.tenant_id,
-                GameRequirementSession.app_id == app_model.id
-            ).first()
-
+            query = db.session.query(GameRequirementSession).filter(
+                GameRequirementSession.id == session_id
+            )
+            
+            if app_model:
+                query = query.filter(
+                    GameRequirementSession.tenant_id == app_model.tenant_id,
+                    GameRequirementSession.app_id == app_model.id
+                )
+                
+            session = query.first()
             if session:
                 return session
 
+        tenant_id = app_model.tenant_id if app_model else current_user.current_tenant_id
+        app_id = app_model.id if app_model else None
+        
         new_session = GameRequirementSession.create(
-            tenant_id=app_model.tenant_id,
-            app_id=app_model.id,
+            tenant_id=tenant_id,
+            app_id=app_id,
             user_id=user_id
         )
 
@@ -70,7 +80,7 @@ class GameRequirementService:
 
         return session
 
-    def analyze_game_requirement(self, app_model: App, user_id: str, input_data: str,
+    def analyze_game_requirement(self, app_model: Optional[App], user_id: str, input_data: str,
                                  session_id: Optional[str] = None) -> Generator[dict[str, Any], None, None]:
         """
         Analyze game requirements using the RequirementUnderstandingAgent
@@ -80,16 +90,12 @@ class GameRequirementService:
             app_model, user_id, session_id)
 
         model_manager = ModelManager()
+        tenant_id = app_model.tenant_id if app_model else current_user.current_tenant_id
         model_instance = model_manager.get_model_instance(
-            tenant_id=app_model.tenant_id,
-            model_config={
-                "model": "deepseek",
-                "model_type": ModelType.LLM,
-                "parameters": {
-                    "temperature": 0.3,
-                    "max_tokens": 4096
-                }
-            }
+            tenant_id=tenant_id, 
+            provider="langgenius/deepseek/deepseek",
+            model_type=ModelType.LLM,
+            model="deepseek-reasoner"
         )
 
         agent = RequirementUnderstandingAgent(

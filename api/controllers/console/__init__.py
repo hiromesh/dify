@@ -3,6 +3,7 @@ from flask import Blueprint
 from libs.external_api import ExternalApi
 
 from .app.app_import import AppImportApi, AppImportCheckDependenciesApi, AppImportConfirmApi
+from .app.game_requirements import GameRequirementAnalysisApi
 from .explore.audio import ChatAudioApi, ChatTextApi
 from .explore.completion import ChatApi, ChatStopApi, CompletionApi, CompletionStopApi
 from .explore.conversation import (
@@ -41,6 +42,15 @@ api.add_resource(RemoteFileUploadApi, "/remote-files/upload")
 api.add_resource(AppImportApi, "/apps/imports")
 api.add_resource(AppImportConfirmApi, "/apps/imports/<string:import_id>/confirm")
 api.add_resource(AppImportCheckDependenciesApi, "/apps/imports/<string:app_id>/check-dependencies")
+
+# 添加两个路由：一个使用string参数，一个专门处理default
+api.add_resource(GameRequirementAnalysisApi, "/apps/<string:app_id>/game-requirements/analyze")
+# 添加一个专用的default路由
+api.add_resource(
+    GameRequirementAnalysisApi, 
+    "/apps/default/game-requirements/analyze", 
+    endpoint="default_game_requirements"
+)
 
 # Import other controllers
 from . import admin, apikey, extension, feature, ping, setup, version

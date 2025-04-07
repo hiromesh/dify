@@ -6,7 +6,7 @@ from flask import Response, stream_with_context
 from flask_login import current_user
 from flask_restful import Resource, reqparse
 
-from controllers.console import api
+from controllers.console.app.wraps import get_app_model
 from controllers.console.wraps import account_initialization_required
 from core.errors.error import LLMBadRequestError
 from models.model import App
@@ -14,15 +14,17 @@ from services.game_requirement_service import GameRequirementService
 
 logger = logging.getLogger(__name__)
 
-
 class GameRequirementAnalysisApi(Resource):
     """
     Game requirement analysis API for processing and understanding game requirements
     """
 
     @account_initialization_required
-    @app_initialization_required
+    @get_app_model
     def post(self, app_model: App):
+        # 如果app_id是"default"，我们将app_model设为None
+        if app_model and app_model.id == "default":
+            app_model = None
         parser = reqparse.RequestParser()
         parser.add_argument('input', type=str, required=True, location='json')
         parser.add_argument('session_id', type=str,
@@ -60,7 +62,3 @@ class GameRequirementAnalysisApi(Resource):
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
         finally:
             yield "data: [DONE]\n\n"
-
-
-api.add_resource(GameRequirementAnalysisApi,
-                 '/apps/<uuid:app_id>/game-requirements/analyze')

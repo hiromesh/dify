@@ -42,6 +42,14 @@ export const getMarketplacePluginsByCollectionId = async (collectionId: string, 
 
   try {
     const url = `${MARKETPLACE_API_PREFIX}/collections/${collectionId}/plugins`
+    console.log(`[DEBUG] Marketplace request URL: ${url}`, {
+      method: 'POST',
+      body: {
+        category: query?.category,
+        exclude: query?.exclude,
+        type: query?.type,
+      },
+    })
     const marketplaceCollectionPluginsData = await globalThis.fetch(
       url,
       {

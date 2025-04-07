@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'a5b7c8d9e0f1'
-down_revision = 'ee79d9b1c156'  # 使用最新的迁移版本作为前一版本
+down_revision = '9168cc7b9b29'  # 使用正确的前一个版本
 branch_labels = None
 depends_on = None
 
@@ -22,7 +22,7 @@ def upgrade():
     op.create_table('game_requirement_sessions',
         sa.Column('id', sa.String(36), primary_key=True),
         sa.Column('tenant_id', sa.String(36), nullable=False),
-        sa.Column('app_id', sa.String(36), nullable=False),
+        sa.Column('app_id', sa.String(36), nullable=True),
         sa.Column('user_id', sa.String(36), nullable=False),
         sa.Column('status', sa.String(36), nullable=False, server_default='requirements'),
         sa.Column('requirement_data', sa.Text(), nullable=True),

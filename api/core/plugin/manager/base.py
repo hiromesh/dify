@@ -58,11 +58,23 @@ class BasePluginManager:
 
         if headers.get("Content-Type") == "application/json" and isinstance(data, dict):
             data = json.dumps(data)
+            
+        # 添加详细的请求日志
+        logger.info(f"[PLUGIN_REQUEST] {method} {str(url)} Headers: {headers}, Params: {params}")
+        if data and not isinstance(data, bytes):
+            logger.info(f"[PLUGIN_REQUEST] Data: {data[:1000] if isinstance(data, str) else str(data)[:1000]}")
 
         try:
             response = requests.request(
                 method=method, url=str(url), headers=headers, data=data, params=params, stream=stream, files=files
             )
+            # 添加详细的响应日志
+            if not stream:
+                logger.info(
+                    f"[PLUGIN_RESPONSE] Status: {response.status_code}, "
+                    f"Content-Type: {response.headers.get('Content-Type')}"
+                )
+                logger.info(f"[PLUGIN_RESPONSE] Content: {response.text[:500] if response.text else 'Empty response'}")
         except requests.exceptions.ConnectionError:
             logger.exception("Request to Plugin Daemon Service failed")
             raise PluginDaemonInnerError(code=-500, message="Request to Plugin Daemon Service failed")

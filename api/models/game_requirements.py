@@ -18,7 +18,7 @@ class GameRequirementSession(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid4()))
     tenant_id = Column(String(36), nullable=False)
-    app_id = Column(String(36), nullable=False)
+    app_id = Column(String(36), nullable=True)
     user_id = Column(String(36), nullable=False)
     status = Column(String(36), nullable=False, default='requirements')
     requirement_data = Column(Text, nullable=True)
