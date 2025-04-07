@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useRouter } from 'next/navigation'
 import { useContext, useContextSelector } from 'use-context-selector'
@@ -51,6 +51,26 @@ type SessionData = {
   data: any
 }
 
+// 添加游戏需求分析服务的API调用
+const analyzeGameRequirement = async (input: string, sessionId?: string) => {
+  const url = '/console/api/apps/default/game-requirements/analyze'
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      input,
+      session_id: sessionId,
+    }),
+  })
+
+  if (!response.ok)
+    throw new Error(`API request failed with status ${response.status}`)
+
+  return response
+}
+
 type CreateFromGameRequirementsProps = {
   onSuccess: () => void
   onClose: () => void
@@ -76,6 +96,14 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
   // 会话状态管理
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [abortController, setAbortController] = useState<AbortController | null>(null)
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // 自动滚动到底部
+  useEffect(() => {
+    if (messagesEndRef.current)
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [messages])
 
   // 聊天和处理相关状态
   const [steps, setSteps] = useState<ProcessStep[]>([
@@ -111,33 +139,116 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
 
   // 滚动到最新消息
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const messagesEndRef = document.getElementById('messages-end')
+    if (messagesEndRef)
+      messagesEndRef.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // 根据应用名自动填充游戏需求简述
+  // 自动填充游戏需求到消息中
   const handleAutoFillDescription = useCallback(() => {
-    if (!name.trim() || gameRequirements) return
+    if (gameRequirements.trim())
+      setMessages(prev => [...prev, { role: 'user', content: gameRequirements }])
+  }, [gameRequirements])
 
-    // 如果有名称但没有简述，自动生成简单描述
-    setGameRequirements(`一个名为"${name}"的游戏`)
-  }, [name, gameRequirements])
-
-  // 添加确认应用信息的函数
+  // 确认应用基本信息
   const confirmAppInfo = useCallback(() => {
-    if (name && gameRequirements)
-      setShowAppInfo(false)
-    else
-      notify({ type: 'error', message: t('app.newApp.infoRequired', '请填写应用名称和游戏需求') })
-  }, [name, gameRequirements, notify, t])
+    setShowAppInfo(false)
+    if (steps[0].status === 'pending') {
+      // 初始化第一个步骤为当前步骤
+      const newSteps = [...steps]
+      newSteps[0].status = 'current'
+      setSteps(newSteps)
+    }
 
-  // 模拟Agent处理消息
-  const handleSendMessage = useCallback(() => {
+    // 如果还没有开始聊天，自动将应用描述作为第一条消息
+    if (messages.length === 0 && gameRequirements.trim())
+      handleAutoFillDescription()
+  }, [steps, gameRequirements, handleAutoFillDescription])
+
+  // 处理SSE事件流
+  const handleSSEStream = useCallback(async (response: Response, initialMessageIndex: number) => {
+    if (!response.body)
+      throw new Error('Response body is null')
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let responseContent = ''
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6)
+            if (data === '[DONE]') {
+              // 流处理完成
+              continue
+            }
+
+            try {
+              const parsed = JSON.parse(data)
+
+              // 处理会话ID
+              if (parsed.session_id && !sessionId)
+                setSessionId(parsed.session_id)
+
+              // 更新消息内容
+              if (parsed.content) {
+                responseContent += parsed.content
+
+                // 实时更新消息
+                setMessages((prev) => {
+                  const updated = [...prev]
+                  if (initialMessageIndex < updated.length) {
+                    updated[initialMessageIndex] = {
+                      role: 'assistant',
+                      content: responseContent,
+                    }
+                  }
+                  return updated
+                })
+              }
+
+              // 根据响应更新步骤状态
+              if (parsed.complete === true && currentStepIndex < steps.length - 1) {
+                const newSteps = [...steps]
+                newSteps[currentStepIndex].status = 'completed'
+                newSteps[currentStepIndex + 1].status = 'current'
+                setSteps(newSteps)
+                setCurrentStepIndex(currentStepIndex + 1)
+              }
+            }
+            catch (e) {
+              console.error('Failed to parse SSE data:', e)
+            }
+          }
+        }
+      }
+    }
+    finally {
+      reader.releaseLock()
+      setIsProcessing(false)
+    }
+
+    return responseContent
+  }, [sessionId, currentStepIndex, steps])
+
+  // 发送消息到AI
+  const handleSendMessage = useCallback(async () => {
     if (!userInput.trim() || isProcessing) return
 
     // 添加用户消息
     setMessages(prev => [...prev, { role: 'user', content: userInput }])
+    setUserInput('')
 
-    // 添加Agent加载消息
+    // 添加助手的加载中消息
     setMessages(prev => [...prev, { role: 'assistant', content: '', isLoading: true }])
 
     setIsProcessing(true)
@@ -146,57 +257,41 @@ function CreateFromGameRequirements({ onClose, onSuccess }: CreateFromGameRequir
     if (messages.length === 0 && !gameRequirements)
       handleAutoFillDescription()
 
-    // 延迟显示Agent回复，模拟思考时间
-    setTimeout(() => {
-      let agentResponse = ''
+    try {
+      // 创建新的AbortController
+      const controller = new AbortController()
+      setAbortController(controller)
 
-      // 根据当前步骤生成不同的回复
-      switch (steps[currentStepIndex].key) {
-        case 'requirements':
-          agentResponse = `我已分析了你的游戏需求，看起来你想创建的是一个${userInput.includes('RPG') ? 'RPG类型的游戏' : '游戏'}。\n\n让我继续分析游戏的核心机制和目标受众。请告诉我更多关于你期望的游戏体验是怎样的？`
-          break
-        case 'design':
-          agentResponse = '我已经完成了策划文档分析，基于你的需求，我推荐以下游戏设计框架：\n\n1. 核心玩法循环：探索 → 战斗 → 收集资源 → 升级装备 → 探索更高难度区域\n2. 玩家进度系统：基于技能树和装备升级\n3. 游戏难度曲线：随玩家进度动态调整\n\n你认为这个框架是否符合你的预期？'
-          break
-        case 'features':
-          agentResponse = '我已将游戏功能分解为以下模块：\n\n1. 角色成长系统\n2. 战斗机制\n3. 物品与装备系统\n4. 任务系统\n5. 动态难度调节系统\n\n我们可以优先实现哪个模块？'
-          break
-        case 'workflow':
-          agentResponse = '工作流已经完善，包含以下主要节点：\n\n1. 玩家输入/行为分析\n2. 游戏状态评估\n3. 难度参数调整\n4. 资源分配优化\n5. 反馈系统\n\n这个工作流程将使游戏体验既有挑战性又保持平衡。我们已经准备好将这个设计转换为实际的应用了！'
-          break
-        default:
-          agentResponse = '我理解了你的需求，让我们继续讨论下一步。'
-          break
-      }
+      // 调用API发送请求
+      const response = await analyzeGameRequirement(userInput, sessionId || undefined)
 
-      // 替换正在载入的消息
+      // 获取消息位置
+      const assistantMessageIndex = messages.length + 1 // +1 是因为我们刚添加了用户消息和加载中消息
+
+      // 处理流式响应
+      await handleSSEStream(response, assistantMessageIndex)
+    }
+    catch (error) {
+      console.error('Error sending message:', error)
+      // 错误处理：更新最后一条消息，显示错误
       setMessages((prev) => {
         const lastIndex = prev.length - 1
         if (lastIndex >= 0 && prev[lastIndex].isLoading) {
           const updatedMessages = [...prev]
-          updatedMessages[lastIndex] = { role: 'assistant', content: agentResponse }
+          updatedMessages[lastIndex] = {
+            role: 'assistant',
+            content: '抱歉，处理您的请求时出现了问题。请稍后再试。',
+          }
           return updatedMessages
         }
-        return [...prev, { role: 'assistant', content: agentResponse }]
+        return prev
       })
-
+    }
+    finally {
       setIsProcessing(false)
-
-      // 更新步骤状态
-      if (currentStepIndex < steps.length - 1) {
-        const newSteps = [...steps]
-        newSteps[currentStepIndex].status = 'completed'
-        newSteps[currentStepIndex + 1].status = 'current'
-        setSteps(newSteps)
-      }
-      else {
-        // 所有步骤完成
-        const newSteps = [...steps]
-        newSteps[currentStepIndex].status = 'completed'
-        setSteps(newSteps)
-      }
-    }, 1500)
-  }, [userInput, steps, gameRequirements, handleAutoFillDescription])
+      setAbortController(null)
+    }
+  }, [userInput, messages, gameRequirements, sessionId, handleAutoFillDescription, handleSSEStream])
 
   // 处理键盘事件
   const handleKeyDown = (e: React.KeyboardEvent) => {
