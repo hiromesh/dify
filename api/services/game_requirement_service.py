@@ -4,13 +4,13 @@ from collections.abc import Generator
 from datetime import datetime
 from typing import Any, Optional
 
+from core.model_manager import ModelManager
+from core.model_runtime.entities.message_entities import AssistantPromptMessage, UserPromptMessage
+from core.model_runtime.entities.model_entities import ModelType
 from core.workflow_generator.agents.requirement_understanding_agent import RequirementUnderstandingAgent
 from extensions.ext_database import db
 from models import App
 from models.game_requirements import GameRequirementSession
-from core.model_runtime.entities.message_entities import AssistantPromptMessage, UserPromptMessage
-from core.model_manager import ModelManager
-from core.model_runtime.entities.model_entities import ModelType
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏AI中台 - 工作流测试</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Dify风格的工作流测试页面样式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+            padding: 0;
+        }
+
+        .workflow-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .workflow-sidebar {
+            width: 64px;
+            background-color: #fff;
+            border-right: 1px solid #e5e7eb;
+            padding: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sidebar-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .sidebar-icon:hover,
+        .sidebar-icon.active {
+            color: #2563eb;
+            background-color: #eff6ff;
+        }
+
+        .workflow-main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .workflow-editor {
+            flex: 1;
+            background-color: #f9fafb;
+            position: relative;
+            overflow: auto;
+        }
+
+        .workflow-preview {
+            width: 320px;
+            background-color: #fff;
+            border-left: 1px solid #e5e7eb;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .preview-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preview-action {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            color: #6b7280;
+            cursor: pointer;
+        }
+
+        .preview-action:hover {
+            background-color: #f3f4f6;
+            color: #111827;
+        }
+
+        .preview-content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .test-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .test-button {
+            background-color: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .test-button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .workflow-canvas {
+            padding: 40px;
+            min-height: 100%;
+            min-width: 100%;
+            position: relative;
+        }
+
+        .workflow-node {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            width: 240px;
+            max-height: 300px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .node-header {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .node-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .start-node .node-icon {
+            background-color: #4f46e5;
+        }
+
+        .llm-node .node-icon {
+            background-color: #2563eb;
+        }
+
+        .remove-node .node-icon {
+            background-color: #ef4444;
+        }
+
+        .painting-node .node-icon {
+            background-color: #8b5cf6;
+        }
+
+        .answer-node .node-icon {
+            background-color: #f97316;
+        }
+
+        .node-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .node-actions {
+            margin-left: auto;
+            display: flex;
+            gap: 4px;
+            color: #9ca3af;
+        }
+
+        .node-action {
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .node-action:hover {
+            color: #111827;
+        }
+
+        .node-body {
+            padding: 8px 12px;
+            overflow-y: auto;
+            max-height: 240px;
+        }
+
+        .param-row {
+            display: flex;
+            font-size: 12px;
+            margin-bottom: 6px;
+            align-items: flex-start;
+        }
+
+        .param-key {
+            width: 100px;
+            color: #4b5563;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .param-value {
+            flex: 1;
+            color: #111827;
+        }
+
+        .array-key {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .node-footer {
+            padding: 6px 12px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .connector {
+            position: absolute;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .connector-line {
+            stroke: #d1d5db;
+            stroke-width: 2px;
+        }
+
+        .preview-chat {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 12px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            background-color: #eff6ff;
+            color: #2563eb;
+        }
+
+        .ai-avatar {
+            background-color: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .message-content {
+            padding: 12px;
+            border-radius: 12px;
+            max-width: 100%;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .user-message .message-content {
+            background-color: #eff6ff;
+            border: 1px solid #dbeafe;
+        }
+
+        .ai-message .message-content {
+            background-color: #f0fdf4;
+            border: 1px solid #dcfce7;
+        }
+
+        .form-input-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-radio {
+            width: 16px;
+            height: 16px;
+        }
+
+        .test-result {
+            margin-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 16px;
+        }
+
+        .test-result-header {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #111827;
+        }
+
+        .result-content {
+            font-size: 14px;
+            color: #374151;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .toolbar {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            z-index: 10;
+            display: flex;
+            gap: 8px;
+        }
+
+        .toolbar-button {
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .toolbar-button:hover {
+            background-color: #f9fafb;
+        }
+
+        .toolbar-button.primary {
+            background-color: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .toolbar-button.primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .zoom-controls {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 10;
+            display: flex;
+            gap: 8px;
+            background-color: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .zoom-control {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #6b7280;
+            border-radius: 4px;
+        }
+
+        .zoom-control:hover {
+            background-color: #f3f4f6;
+            color: #111827;
+        }
+
+        .zoom-level {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #6b7280;
+            padding: 0 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="workflow-container">
+        <!-- 左侧边栏 -->
+        <div class="workflow-sidebar">
+            <div class="sidebar-icon">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="sidebar-icon active">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+            <div class="sidebar-icon">
+                <i class="fas fa-cubes"></i>
+            </div>
+            <div class="sidebar-icon">
+                <i class="fas fa-code"></i>
+            </div>
+            <div class="sidebar-icon">
+                <i class="fas fa-eye"></i>
+            </div>
+            <div class="sidebar-icon">
+                <i class="fas fa-cog"></i>
+            </div>
+        </div>
+
+        <!-- 中间工作流编辑区 -->
+        <div class="workflow-main">
+            <div class="workflow-editor">
+                <!-- 工具栏 -->
+                <div class="toolbar">
+                    <button class="toolbar-button primary">
+                        <i class="fas fa-play"></i>
+                        <span>运行</span>
+                    </button>
+                    <button class="toolbar-button">
+                        <i class="fas fa-save"></i>
+                        <span>保存</span>
+                    </button>
+                    <button class="toolbar-button">
+                        <i class="fas fa-file-export"></i>
+                        <span>导出</span>
+                    </button>
+                </div>
+
+                <!-- 工作流画布 -->
+                <div class="workflow-canvas">
+                    <!-- START节点 -->
+                    <div class="workflow-node start-node" style="top: 120px; left: 120px;">
+                        <div class="node-header">
+                            <div class="node-icon">S</div>
+                            <div class="node-title">START</div>
+                            <div class="node-actions">
+                                <div class="node-action"><i class="fas fa-ellipsis-h"></i></div>
+                            </div>
+                        </div>
+                        <div class="node-body">
+                            <div class="param-row">
+                                <div class="param-key">[s] name</div>
+                                <div class="param-value">玩家名字</div>
+                            </div>
+                            <div class="param-row">
+                                <div class="param-key">[s] gender</div>
+                                <div class="param-value">玩家性别</div>
+                            </div>
+                            <div class="param-row">
+                                <div class="param-key">[s] game</div>
+                                <div class="param-value">游戏ID</div>
+                            </div>
+                            <div class="param-row">
+                                <div class="param-key">[s] genderFlow</div>
+                                <div class="param-value">性别选择</div>
+                            </div>
+                        </div>
+                        <div class="node-footer">
+                            <span>开始节点</span>
+                        </div>
+                    </div>
+
+                    <!-- SVG连接线 -->
+                    <svg class="connector" width="120" height="30" style="top: 170px; left: 360px;">
+                        <path class="connector-line" d="M0,15 L120,15" fill="none" />
+                    </svg>
+
+                    <!-- LLM节点 -->
+                    <div class="workflow-node llm-node" style="top: 120px; left: 480px;">
+                        <div class="node-header">
+                            <div class="node-icon">L</div>
+                            <div class="node-title">LLM 3</div>
+                            <div class="node-actions">
+                                <div class="node-action"><i class="fas fa-ellipsis-h"></i></div>
+                            </div>
+                        </div>
+                        <div class="node-body">
+                            <div class="param-row">
+                                <div class="param-key">deepseek-chat</div>
+                                <div class="param-value">deepseek-chat</div>
+                            </div>
+                        </div>
+                        <div class="node-footer">
+                            <span>语言模型</span>
+                        </div>
+                    </div>
+
+                    <!-- SVG连接线 -->
+                    <svg class="connector" width="100" height="30" style="top: 170px; left: 720px;">
+                        <path class="connector-line" d="M0,15 L100,15" fill="none" />
+                    </svg>
+
+                    <!-- REMOVE节点 -->
+                    <div class="workflow-node remove-node" style="top: 120px; left: 820px;">
+                        <div class="node-header">
+                            <div class="node-icon">R</div>
+                            <div class="node-title">REMOVE THINK</div>
+                            <div class="node-actions">
+                                <div class="node-action"><i class="fas fa-ellipsis-h"></i></div>
+                            </div>
+                        </div>
+                        <div class="node-body">
+                            <div class="param-row">
+                                <div class="param-key">[r] remove</div>
+                                <div class="param-value">思考内容</div>
+                            </div>
+                            <div class="param-row">
+                                <div class="param-key">[r] has</div>
+                                <div class="param-value">true</div>
+                            </div>
+                        </div>
+                        <div class="node-footer">
+                            <span>移除过滤器</span>
+                        </div>
+                    </div>
+
+                    <!-- SVG连接线 -->
+                    <svg class="connector" width="100" height="30" style="top: 170px; left: 1060px;">
+                        <path class="connector-line" d="M0,15 L100,15" fill="none" />
+                    </svg>
+
+                    <!-- ANSWER节点 -->
+                    <div class="workflow-node answer-node" style="top: 120px; left: 1160px;">
+                        <div class="node-header">
+                            <div class="node-icon">A</div>
+                            <div class="node-title">ANSW</div>
+                            <div class="node-actions">
+                                <div class="node-action"><i class="fas fa-ellipsis-h"></i></div>
+                            </div>
+                        </div>
+                        <div class="node-body">
+                            <div class="param-row">
+                                <div class="param-key">消息</div>
+                                <div class="param-value">最终回复</div>
+                            </div>
+                            <div class="param-row">
+                                <div class="param-key">[r] remove</div>
+                                <div class="param-value">--</div>
+                            </div>
+                            <div class="param-row">
+                                <div class="param-key">[r] has</div>
+                                <div class="param-value">--</div>
+                            </div>
+                        </div>
+                        <div class="node-footer">
+                            <span>回复节点</span>
+                        </div>
+                    </div>
+
+                    <!-- PAINTING节点 -->
+                    <div class="workflow-node painting-node" style="top: 280px; left: 820px;">
+                        <div class="node-header">
+                            <div class="node-icon">P</div>
+                            <div class="node-title">PAINTING</div>
+                            <div class="node-actions">
+                                <div class="node-action"><i class="fas fa-ellipsis-h"></i></div>
+                            </div>
+                        </div>
+                        <div class="node-body">
+                            <div class="param-row">
+                                <div class="param-key">gemini-2.0</div>
+                                <div class="param-value">flash-thinking-experience</div>
+                            </div>
+                        </div>
+                        <div class="node-footer">
+                            <span>图像生成</span>
+                        </div>
+                    </div>
+
+                    <!-- 第二个REMOVE节点 -->
+                    <div class="workflow-node remove-node" style="top: 420px; left: 820px;">
+                        <div class="node-header">
+                            <div class="node-icon">R</div>
+                            <div class="node-title">REMOVE THINK</div>
+                            <div class="node-actions">
+                                <div class="node-action"><i class="fas fa-ellipsis-h"></i></div>
+                            </div>
+                        </div>
+                        <div class="node-body">
+                            <div class="param-row">
+                                <div class="param-key">[r] remove</div>
+                                <div class="param-value">thinking</div>
+                            </div>
+                        </div>
+                        <div class="node-footer">
+                            <span>移除过滤器</span>
+                        </div>
+                    </div>
+
+                    <!-- 连接线和其他节点 -->
+                    <svg class="connector" width="2" height="80" style="top: 200px; left: 880px;">
+                        <path class="connector-line" d="M1,0 L1,80" fill="none" />
+                    </svg>
+
+                    <svg class="connector" width="2" height="60" style="top: 360px; left: 880px;">
+                        <path class="connector-line" d="M1,0 L1,60" fill="none" />
+                    </svg>
+
+                    <!-- 缩放控制 -->
+                    <div class="zoom-controls">
+                        <div class="zoom-control"><i class="fas fa-minus"></i></div>
+                        <div class="zoom-level">77%</div>
+                        <div class="zoom-control"><i class="fas fa-plus"></i></div>
+                        <div class="zoom-control"><i class="fas fa-expand"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧预览区 -->
+            <div class="workflow-preview">
+                <div class="preview-header">
+                    <div class="preview-title">预览</div>
+                    <div class="preview-actions">
+                        <div class="preview-action"><i class="fas fa-sync-alt"></i></div>
+                        <div class="preview-action"><i class="fas fa-times"></i></div>
+                    </div>
+                </div>
+                <div class="preview-content">
+                    <form class="test-form">
+                        <div class="form-group">
+                            <label class="form-label">你的名字:</label>
+                            <input type="text" class="form-input" value="东辉">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">ta性别:</label>
+                            <select class="form-input">
+                                <option value="女">女</option>
+                                <option value="男">男</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">你喜欢啵啵茶么:</label>
+                            <div class="form-input-options">
+                                <div class="option-row">
+                                    <input type="radio" id="like-yes" name="like-ahri" class="option-radio" checked>
+                                    <label for="like-yes">喜欢</label>
+                                </div>
+                                <div class="option-row">
+                                    <input type="radio" id="like-no" name="like-ahri" class="option-radio">
+                                    <label for="like-no">不喜欢</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">你的性别: (选填)</label>
+                            <input type="text" class="form-input" placeholder="男">
+                        </div>
+
+                        <button type="button" class="test-button">
+                            <i class="fas fa-play"></i>
+                            运行测试
+                        </button>
+                    </form>
+
+                    <div class="test-result">
+                        <div class="test-result-header">测试结果</div>
+                        <div class="preview-chat">
+                            <div class="message user-message">
+                                <div class="message-avatar user-avatar">U</div>
+                                <div class="message-content">
+                                    你好啊
+                                </div>
+                            </div>
+                            <div class="message ai-message">
+                                <div class="message-avatar ai-avatar">A</div>
+                                <div class="message-content">
+                                    你好，东辉！很高兴见到你。我听说你喜欢啵啵茶，她确实是一个很受欢迎的角色呢。有什么我可以帮助你的吗？
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 运行按钮点击事件
+            const runButton = document.querySelector('.test-button');
+            const toolbarRunButton = document.querySelector('.toolbar-button.primary');
+
+            [runButton, toolbarRunButton].forEach(button => {
+                if (button) {
+                    button.addEventListener('click', function () {
+                        alert('工作流测试已启动，正在执行工作流...');
+                    });
+                }
+            });
+
+            // 节点点击高亮
+            const nodes = document.querySelectorAll('.workflow-node');
+            nodes.forEach(node => {
+                node.addEventListener('click', function () {
+                    nodes.forEach(n => n.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)');
+                    this.style.boxShadow = '0 0 0 2px #3b82f6, 0 1px 3px rgba(0, 0, 0, 0.1)';
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

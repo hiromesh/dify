@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏AI中台 - Agent交互</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* 对话界面样式 */
+        .chat-container {
+            display: flex;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        .chat-sidebar {
+            width: 300px;
+            background-color: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: bold;
+        }
+
+        .workflow-steps {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .step-item {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background-color: #f1f5f9;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .step-item.active {
+            background-color: rgba(37, 99, 235, 0.1);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .step-item:hover {
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+
+        .step-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .step-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+        }
+
+        .status-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .status-completed {
+            background-color: var(--secondary-color);
+        }
+
+        .status-current {
+            background-color: var(--primary-color);
+        }
+
+        .status-pending {
+            background-color: var(--text-muted);
+        }
+
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #f8fafc;
+        }
+
+        .chat-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-weight: bold;
+        }
+
+        .header-actions button {
+            margin-left: 10px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 85%;
+            margin-bottom: 20px;
+            display: flex;
+        }
+
+        .message.user {
+            margin-left: auto;
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+
+        .message.agent .message-avatar {
+            background-color: var(--tertiary-color);
+        }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 18px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .message.user .message-content {
+            background-color: var(--primary-color);
+            color: white;
+            border-top-right-radius: 0;
+        }
+
+        .message.agent .message-content {
+            background-color: white;
+            border-top-left-radius: 0;
+        }
+
+        .thinking {
+            color: var(--text-muted);
+            font-style: italic;
+            margin: 10px 0 10px 60px;
+        }
+
+        .workflow-preview {
+            background-color: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 10px 0 10px 60px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .workflow-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workflow-actions a {
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            margin-left: 15px;
+            text-decoration: none;
+        }
+        
+        .edit-workflow-btn {
+            font-weight: bold;
+            color: white !important;
+            background-color: var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        
+        .edit-workflow-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .workflow-image {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .chat-input {
+            padding: 20px;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .input-box {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 12px 20px;
+            min-height: 50px;
+            resize: none;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .input-box:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+        }
+
+        .send-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            margin-left: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .send-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .agent-suggestion {
+            background-color: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin: 10px 0 10px 60px;
+        }
+
+        .suggestion-title {
+            font-weight: 500;
+            color: var(--tertiary-color);
+            margin-bottom: 8px;
+        }
+
+        .suggestion-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-option {
+            background-color: white;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .suggestion-option:hover {
+            background-color: rgba(139, 92, 246, 0.1);
+        }
+
+        /* 工作流节点样式 */
+        .preview-node {
+            position: relative;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-width: 200px;
+        }
+
+        .preview-node-header {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .preview-node-start {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .preview-node-action {
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .preview-node-decision {
+            border-left: 4px solid var(--tertiary-color);
+        }
+
+        .preview-node-content {
+            font-size: 0.85rem;
+        }
+
+        .preview-connector {
+            position: absolute;
+            height: 2px;
+            background-color: #94a3b8;
+            z-index: 5;
+        }
+        
+        .highlight-text {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 侧边导航栏 -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <span>游戏AI中台</span>
+            </div>
+            <div class="user-info">
+                <div class="avatar">H</div>
+                <span>hiro's Workspace</span>
+            </div>
+            <ul class="nav-menu">
+                <li><i class="fas fa-th-large"></i> 全部</li>
+                <li class="active"><i class="fas fa-robot"></i> Agent</li>
+                <li><i class="fas fa-tools"></i> 工作流</li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 顶部导航 -->
+            <header class="top-nav">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="搜索...">
+                </div>
+                <div class="top-nav-actions">
+                    <button class="btn-workbench"><i class="fas fa-desktop"></i> 工作室</button>
+                    <button class="btn-docs"><i class="fas fa-book"></i> 知识库</button>
+                    <div class="dropdown">
+                        <button class="btn-tools"><i class="fas fa-tools"></i> 工具</button>
+                        <div class="dropdown-content">
+                            <a href="#">工具1</a>
+                            <a href="#">工具2</a>
+                            <a href="#">工具3</a>
+                        </div>
+                    </div>
+                    <div class="avatar">H</div>
+                </div>
+            </header>
+
+            <!-- 对话界面 -->
+            <div class="chat-container">
+                <!-- 侧边栏 - 工作流步骤 -->
+                <div class="chat-sidebar">
+                    <div class="sidebar-header">
+                        创建动态难度调节工作流
+                    </div>
+                    <div class="workflow-steps">
+                        <div class="step-item active">
+                            <div class="step-title">1. 需求分析</div>
+                            <div class="step-status">
+                                <div class="status-icon status-current"></div>
+                                进行中
+                            </div>
+                        </div>
+                        <div class="step-item">
+                            <div class="step-title">2. 需求澄清</div>
+                            <div class="step-status">
+                                <div class="status-icon status-pending"></div>
+                                待处理
+                            </div>
+                        </div>
+                        <div class="step-item">
+                            <div class="step-title">3. 功能分解</div>
+                            <div class="step-status">
+                                <div class="status-icon status-pending"></div>
+                                待处理
+                            </div>
+                        </div>
+                        <div class="step-item">
+                            <div class="step-title">4. 工作流生成</div>
+                            <div class="step-status">
+                                <div class="status-icon status-pending"></div>
+                                待处理
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 主要聊天区域 -->
+                <div class="chat-main">
+                    <div class="chat-header">
+                        <div class="header-title">
+                            <i class="fas fa-robot"></i> GameAI Assistant
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-outline"><i class="fas fa-clock"></i> 历史记录</button>
+                            <button class="btn btn-outline"><i class="fas fa-cog"></i> 设置</button>
+                        </div>
+                    </div>
+
+                    <div class="chat-messages">
+                        <!-- Agent 消息 -->
+                        <div class="message agent">
+                            <div class="message-avatar">A</div>
+                            <div class="message-content">
+                                你好，我是你的游戏AI助手。我可以帮你创建游戏中的AI动作流。请告诉我你想要创建什么类型的游戏AI功能？
+                            </div>
+                        </div>
+
+                        <!-- 用户消息 -->
+                        <div class="message user">
+                            <div class="message-avatar">H</div>
+                            <div class="message-content">
+                                我想为一个动作RPG游戏创建一个动态难度调节系统，能够根据玩家的技能水平自动调整游戏难度，当玩家表现不佳时降低难度，表现优秀时提高难度。
+                            </div>
+                        </div>
+
+                        <!-- Agent 思考中 -->
+                        <div class="thinking">
+                            <i class="fas fa-spinner fa-spin"></i> 正在分析需求...
+                        </div>
+
+                        <!-- Agent 回复 -->
+                        <div class="message agent">
+                            <div class="message-avatar">A</div>
+                            <div class="message-content">
+                                谢谢你的需求描述。我理解你想创建一个动态难度调节系统，这是现代RPG游戏中常见的功能。为了更准确地设计工作流，我需要了解一些细节：
+                                <br><br>
+                                1. 你希望系统评估玩家技能的主要指标是什么？（例如：击杀/死亡比率、任务完成时间、受伤频率等）
+                                <br>
+                                2. 你希望难度调整影响游戏的哪些方面？（例如：敌人血量、伤害、AI反应速度、敌人数量等）
+                                <br>
+                                3. 你期望难度调整发生的频率是什么？（实时、关卡结束后、游戏会话间等）
+                            </div>
+                        </div>
+
+                        <!-- 用户回复 -->
+                        <div class="message user">
+                            <div class="message-avatar">H</div>
+                            <div class="message-content">
+                                1. 我想评估玩家的死亡次数、连击数、闪避成功率以及平均战斗时长。
+                                <br>
+                                2. 我希望调整敌人的攻击模式、血量和伤害值。
+                                <br>
+                                3. 我希望系统在每次战斗结束后重新评估难度，并在下一场战斗开始时应用新的难度设置。
+                            </div>
+                        </div>
+
+                        <!-- Agent 回复 -->
+                        <div class="message agent">
+                            <div class="message-avatar">A</div>
+                            <div class="message-content">
+                                非常好，根据你提供的信息，我可以开始设计一个动态难度调节工作流。我会创建一个工作流，包含以下主要组件：
+                                <br><br>
+                                1. 玩家数据收集模块：收集死亡次数、连击数、闪避成功率和战斗时长
+                                <br>
+                                2. 技能评估模块：分析收集的数据评定玩家技能水平
+                                <br>
+                                3. 难度调整模块：基于评估结果调整敌人的攻击模式、血量和伤害值
+                                <br>
+                                4. 反馈循环：每次战斗后重新评估
+                                <br><br>
+                                这听起来符合你的需求吗？
+                            </div>
+                        </div>
+
+                        <!-- 用户回复 -->
+                        <div class="message user">
+                            <div class="message-avatar">H</div>
+                            <div class="message-content">
+                                是的，听起来不错。我还想确保系统能学习玩家的模式，例如玩家是否擅长闪避但不擅长攻击，然后相应地调整敌人行为。
+                            </div>
+                        </div>
+
+                        <!-- Agent 回复 -->
+                        <div class="message agent">
+                            <div class="message-avatar">A</div>
+                            <div class="message-content">
+                                理解了，我会在工作流中添加玩家行为模式分析功能，这样系统不仅能根据整体表现调整难度，还能针对玩家的具体优势和劣势定制挑战。
+                                <br><br>
+                                我现在开始创建初步的工作流草图，稍后会展示给你。
+                            </div>
+                        </div>
+
+                        <!-- 工作流预览 -->
+                        <div class="workflow-preview">
+                            <div class="workflow-title">
+                                <span>动态难度调节工作流（初步草图）</span>
+                                <div class="workflow-actions">
+                                    <a href="workflow-editor.html" class="edit-workflow-btn"><i class="fas fa-edit"></i> 在编辑器中打开</a>
+                                    <a href="#"><i class="fas fa-expand"></i> 全屏查看</a>
+                                    <a href="#"><i class="fas fa-download"></i> 导出</a>
+                                </div>
+                            </div>
+                            <div style="position: relative; height: 300px; margin-top: 20px;">
+                                <!-- 开始节点 -->
+                                <div class="preview-node preview-node-start"
+                                    style="position: absolute; top: 0; left: 50px;">
+                                    <div class="preview-node-header">START</div>
+                                    <div class="preview-node-content">
+                                        游戏战斗结束
+                                    </div>
+                                </div>
+
+                                <!-- 连接线 -->
+                                <div class="preview-connector" style="top: 45px; left: 160px; width: 80px;"></div>
+
+                                <!-- 数据收集节点 -->
+                                <div class="preview-node preview-node-action"
+                                    style="position: absolute; top: 0; left: 240px;">
+                                    <div class="preview-node-header">DATA COLLECTION</div>
+                                    <div class="preview-node-content">
+                                        收集玩家战斗数据：<br>
+                                        - 死亡次数<br>
+                                        - 连击数<br>
+                                        - 闪避成功率<br>
+                                        - 战斗时长
+                                    </div>
+                                </div>
+
+                                <!-- 连接线 -->
+                                <div class="preview-connector" style="top: 45px; left: 350px; width: 80px;"></div>
+
+                                <!-- 玩家模式分析节点 -->
+                                <div class="preview-node preview-node-decision"
+                                    style="position: absolute; top: 0; left: 430px;">
+                                    <div class="preview-node-header">PLAYER ANALYSIS</div>
+                                    <div class="preview-node-content">
+                                        分析玩家行为模式：<br>
+                                        - 攻击风格<br>
+                                        - 防御倾向<br>
+                                        - 技能使用偏好
+                                    </div>
+                                </div>
+
+                                <!-- 连接线 垂直 -->
+                                <div class="preview-connector"
+                                    style="top: 130px; left: 500px; height: 60px; width: 2px;"></div>
+
+                                <!-- 难度调整节点 -->
+                                <div class="preview-node preview-node-action"
+                                    style="position: absolute; top: 190px; left: 430px;">
+                                    <div class="preview-node-header">DIFFICULTY ADJUST</div>
+                                    <div class="preview-node-content">
+                                        调整难度参数：<br>
+                                        - 敌人攻击模式<br>
+                                        - 敌人血量<br>
+                                        - 敌人伤害值
+                                    </div>
+                                </div>
+
+                                <!-- 连接线 水平向左 -->
+                                <div class="preview-connector" style="top: 220px; left: 350px; width: 80px;"></div>
+
+                                <!-- 结果输出节点 -->
+                                <div class="preview-node preview-node-decision"
+                                    style="position: absolute; top: 190px; left: 240px;">
+                                    <div class="preview-node-header">OUTPUT</div>
+                                    <div class="preview-node-content">
+                                        应用新难度设置<br>
+                                        到下一场战斗
+                                    </div>
+                                </div>
+
+                                <!-- 连接线 水平向左 -->
+                                <div class="preview-connector" style="top: 220px; left: 160px; width: 80px;"></div>
+
+                                <!-- 结束节点 -->
+                                <div class="preview-node preview-node-start"
+                                    style="position: absolute; top: 190px; left: 50px;">
+                                    <div class="preview-node-header">END</div>
+                                    <div class="preview-node-content">
+                                        进入下一场战斗
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent 回复 -->
+                        <div class="message agent">
+                            <div class="message-avatar">A</div>
+                            <div class="message-content">
+                                这是我根据你的需求绘制的初步工作流图。工作流包含了数据收集、行为模式分析和难度动态调整的关键步骤。
+                                <br><br>
+                                你可以对这个初步设计提供反馈，或者我们可以进一步完善各个模块的具体实现细节。例如，我们可以详细定义玩家技能评分算法或难度参数的具体调整公式。
+                                <br><br>
+                                <span class="highlight-text">👉 点击工作流上方的「在编辑器中打开」按钮，可以进入专业工作流编辑器进行更详细的调整。</span>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+                    <div class="chat-input">
+                        <div class="input-container">
+                            <textarea class="input-box" placeholder="输入你的问题或反馈..."></textarea>
+                            <button class="send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 简单的输入处理
+        document.querySelector('.input-box').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                // 这里可以添加发送消息的逻辑
+                console.log('发送消息:', this.value);
+                this.value = '';
+            }
+        });
+
+        // 点击建议选项
+        document.querySelectorAll('.suggestion-option').forEach(option => {
+            option.addEventListener('click', function () {
+                document.querySelector('.input-box').value = this.textContent;
+                document.querySelector('.input-box').focus();
+            });
+        });
+
+        // 点击步骤项
+        document.querySelectorAll('.step-item').forEach(item => {
+            item.addEventListener('click', function () {
+                document.querySelectorAll('.step-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>

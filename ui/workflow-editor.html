@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏AI中台 - 工作流编辑器</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body class="workflow-editor-page">
+    <div class="app-container">
+        <!-- 侧边导航栏 -->
+        <nav class="sidebar sidebar-mini">
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <div class="app-icon">
+                <div class="game-npc-icon">N</div>
+            </div>
+            <ul class="nav-menu">
+                <li class="active" title="工作流编辑"><i class="fas fa-project-diagram"></i></li>
+                <li title="节点库"><i class="fas fa-cubes"></i></li>
+                <li title="变量配置"><i class="fas fa-cog"></i></li>
+                <li title="查看代码"><i class="fas fa-code"></i></li>
+                <li title="运行测试"><i class="fas fa-play"></i></li>
+                <li title="分析报告"><i class="fas fa-chart-line"></i></li>
+                <li title="导出DSL"><i class="fas fa-file-export"></i></li>
+            </ul>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="main-content workflow-content">
+            <!-- 顶部导航 -->
+            <header class="top-nav workflow-nav">
+                <div class="workflow-title">
+                    <div class="game-npc-icon">N</div>
+                    <div class="title-info">
+                        <h2>动态难度调节系统</h2>
+                        <span class="timestamp">自动保存于 05:24:04 · 未发布</span>
+                    </div>
+                </div>
+                <div class="top-nav-actions">
+                    <button class="btn-preview"><i class="fas fa-eye"></i> 预览</button>
+                    <button class="btn-test"><i class="fas fa-vial"></i> 测试</button>
+                    <button class="btn-export"><i class="fas fa-file-export"></i> 导出DSL</button>
+                    <div class="avatar">H</div>
+                </div>
+            </header>
+
+            <!-- 工作流编辑区域 -->
+            <div class="workflow-editor">
+                <!-- 工作流画布 -->
+                <div class="workflow-canvas" style="position: relative; height: 650px;">
+                    <!-- 节点：开始 -->
+                    <div class="node node-start" style="position: absolute; top: 70px; left: 50px; width: 230px;">
+                        <div class="node-header">
+                            <span class="node-type">START</span>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-params">
+                                <div class="param-row">
+                                    <span class="param-name">difficulty</span>
+                                    <span class="param-value">初始值</span>
+                                </div>
+                                <div class="param-row">
+                                    <span class="param-name">player</span>
+                                    <span class="param-value">玩家ID</span>
+                                </div>
+                                <div class="param-row">
+                                    <span class="param-name">gameType</span>
+                                    <span class="param-value">游戏类型</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 连接线 -->
+                    <div class="connector-line" style="position: absolute; top: 110px; left: 280px; width: 120px; height: 2px;"></div>
+
+                    <!-- 节点：参数提取器 -->
+                    <div class="node node-extractor" style="position: absolute; top: 70px; left: 400px; width: 230px;">
+                        <div class="node-header">
+                            <span class="node-type">PARAMETER EXTRACTOR</span>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-params">
+                                <div class="param-row">
+                                    <span class="param-name">playerLevel</span>
+                                    <span class="param-value">int</span>
+                                </div>
+                                <div class="param-row">
+                                    <span class="param-name">playerSkill</span>
+                                    <span class="param-value">float</span>
+                                </div>
+                                <div class="param-row">
+                                    <span class="param-name">gameSession</span>
+                                    <span class="param-value">string</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 连接线 -->
+                    <div class="connector-line" style="position: absolute; top: 110px; left: 630px; width: 120px; height: 2px;"></div>
+
+                    <!-- 节点：AI分析 -->
+                    <div class="node node-analysis" style="position: absolute; top: 70px; left: 750px; width: 230px;">
+                        <div class="node-header">
+                            <span class="node-type">DIFFICULTY ANALYSIS</span>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-content">
+                                <span class="ai-model">gemini-2.0-flash-thinking-exp-01-21</span>
+                                <div class="model-badge">AI</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 连接线 -->
+                    <div class="connector-line" style="position: absolute; top: 110px; left: 980px; width: 120px; height: 2px;"></div>
+
+                    <!-- 节点：行为生成 -->
+                    <div class="node node-behavior" style="position: absolute; top: 70px; left: 1100px; width: 230px;">
+                        <div class="node-header">
+                            <span class="node-type">BEHAVIOR GENERATOR</span>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-content">
+                                <div class="param-badge">行为模式计算</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 节点：玩家数据 -->
+                    <div class="node node-player" style="position: absolute; top: 250px; left: 50px; width: 230px;">
+                        <div class="node-header">
+                            <span class="node-type">PLAYER DATA</span>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-params">
+                                <div class="param-row">
+                                    <span class="param-name">历史记录</span>
+                                    <span class="param-value">获取</span>
+                                </div>
+                                <div class="param-row">
+                                    <span class="param-name">行为模式</span>
+                                    <span class="param-value">分析</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 连接线 -->
+                    <div class="connector-line" style="position: absolute; top: 290px; left: 280px; width: 120px; height: 2px;"></div>
+
+                    <!-- 节点：动态难度 -->
+                    <div class="node node-difficulty" style="position: absolute; top: 250px; left: 400px; width: 230px;">
+                        <div class="node-header">
+                            <span class="node-type">DYNAMIC DIFFICULTY</span>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-content">
+                                <div class="code-snippet">
+                                    <pre>adjust_difficulty(player_skill)</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 连接线 垂直 -->
+                    <div class="connector-line vertical" style="position: absolute; top: 330px; left: 515px; width: 2px; height: 100px;"></div>
+
+                    <!-- 节点：结果输出 -->
+                    <div class="node node-result" style="position: absolute; top: 430px; left: 400px; width: 230px;">
+                        <div class="node-header">
+                            <span class="node-type">RESULT OUTPUT</span>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-content">
+                                <div class="code-snippet">
+                                    <pre>return {
+  difficulty_level: value,
+  behavior_patterns: [...]
+}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧属性面板 -->
+                <div class="properties-panel">
+                    <div class="panel-header">
+                        <div class="selected-node">
+                            <div class="node-icon">AI</div>
+                            <span>difficulty analysis</span>
+                        </div>
+                        <div class="panel-actions">
+                            <button class="btn-minimize"><i class="fas fa-chevron-right"></i></button>
+                            <button class="btn-fullscreen"><i class="fas fa-expand"></i></button>
+                            <button class="btn-close"><i class="fas fa-times"></i></button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="panel-section">
+                            <h3>模型</h3>
+                            <div class="model-selector">
+                                <div class="model-icon">G</div>
+                                <span class="model-name">gemini-2.0-flash-thinking-exp-01-21</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+
+                        <div class="panel-section">
+                            <h3>上下文 <i class="fas fa-info-circle"></i></h3>
+                            <div class="context-editor">
+                                <textarea placeholder="设置变量..."></textarea>
+                            </div>
+                        </div>
+
+                        <div class="panel-section system-prompt">
+                            <h3>SYSTEM <span class="token-count">781 <i class="fas fa-chart-pie"></i></span></h3>
+                            <div class="prompt-editor">
+                                <div class="prompt-content">
+                                    <p>你是一个智能化体验平台，负责根据玩家输入的游戏规则和玩家情况实时调节游戏难度。</p>
+                                    <p># 初始Prompt任务</p>
+                                    <p>## 基本资料</p>
+                                    <p>能力为 Start：{d.name}，是 Start {d.namePlayer} 的角色困难人AI，你的任务是分析玩家技能并动态调整难度。</p>
+                                    <p>## 角色1：预测玩家技能</p>
+                                    <p>"接上方棋，现代作风，提高组织性，实用简练的思路分析玩家技能，判断对该难度的适应能力。"</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 添加工具提示功能
+        document.querySelectorAll('.nav-menu li').forEach(item => {
+            const title = item.getAttribute('title');
+            item.addEventListener('mouseover', function(e) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = title;
+                document.body.appendChild(tooltip);
+                
+                const rect = item.getBoundingClientRect();
+                tooltip.style.left = rect.right + 10 + 'px';
+                tooltip.style.top = rect.top + (rect.height / 2) - (tooltip.offsetHeight / 2) + 'px';
+            });
+            
+            item.addEventListener('mouseout', function() {
+                const tooltips = document.querySelectorAll('.tooltip');
+                tooltips.forEach(t => t.remove());
+            });
+        });
+        
+        // 导出DSL按钮功能
+        document.querySelector('.btn-export').addEventListener('click', function() {
+            alert('工作流DSL已导出，可在游戏服务中使用');
+        });
+        
+        // 测试按钮功能
+        document.querySelector('.btn-test').addEventListener('click', function() {
+            alert('测试环境已启动，可以模拟玩家行为测试动态难度调节');
+        });
+    </script>
+</body>
+</html>
